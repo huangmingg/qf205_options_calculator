@@ -28,6 +28,10 @@ def calculate_price(
 
     elif cal_type == 'implicit':
         return __implicit(S, K, r, q, T, sigma, M, N)
+    
+    elif cal_type == 'crank':
+        return __crank(S, K, r, q, T, sigma, M, N)
+    
     else:
         print("Calculation method not recognized") 
         return (0,0)
@@ -101,4 +105,107 @@ def __implicit(
     sigma: float, 
     M: int, 
     N:int) -> Tuple[float, float]:
-    pass
+    try:
+        Smax = 2*K
+        #stock step size
+        deltaS=Smax/M
+
+        #timestep size
+        deltaT=T/N
+
+        # j=np.arange(1,M,dtype=np.float)
+        j=np.arange(0,M+1,1).reshape(M+1,1)
+        Fc, Fp =np.maximum(j*deltaS - K , 0),np.maximum(K - j*deltaS, 0)
+        #generate aj,bj and cj
+        aj = [((1/2)*(deltaT)*(((r-q)*j) - (sigma ** 2) * (j ** 2))) for j in range(1,M-1+1)]
+        bj = [(1 + (deltaT) * ((sigma ** 2)*(j ** 2) + r)) for j in range(1,M-1+1)]
+        cj = [(-(1/2) * (deltaT) * ((sigma ** 2)*(j ** 2) + (r - q) * j)) for j in range(1,M-1+1)] 
+
+        #generate tri diagonal matrix with 1,1 and M,M position = 1
+        A = np.zeros((M+1,M+1))
+        for j in range (1,M):
+            A[j,j-1:j+2] = aj[j-1],bj[j-1],cj[j-1]
+        A[0,0],A[M,M] = 1,1
+
+        #generate inverse A
+        Ainv = np.linalg.inv(A) 
+        k = math.floor(S/deltaS)
+
+        Call,Put = [],[]
+        for i in range(N-1,-1,-1): 
+            Fc[0,0],Fp[M,0] = 0,0
+            Fc[M,0],Fp[0,0] = (Smax - K*(np.exp(-r*(N-i)*deltaT))), (K*(np.exp(-r*(N-i)*deltaT)))
+            Fc,Fp = np.dot(Ainv,Fc),np.dot(Ainv,Fp)
+            Call.insert(0, (Fc[k,0] + ((Fc[k+1,0]-Fc[k,0]) /deltaS) * (S - k * deltaS)))
+            Put.insert(0, (Fp[k,0] + ((Fp[k+1,0]-Fp[k,0]) /deltaS) * (S - k * deltaS)))
+        return (Call[0],Put[0],False,None)
+    
+    except Exception as e:
+        print(e)
+        return (0,0)
+    
+
+def __crank(
+    S: float, 
+    K: float, 
+    r: float, 
+    q: float, 
+    T: float, 
+    sigma: float, 
+    M: int, 
+    N:int) -> Tuple[float, float]:
+    
+    try:
+        #Input parameters
+        S = float(S) # S = Price of the underlying asset
+        K = float(K) # K = strike price
+        r = float(r) # r = annualised risk-free rate
+        sigma = float(sigma) # σ,(sigma) = volatility 
+        T = float(T) # T = time to expiration(in years)
+        M = int(M) # M = space step
+        N = int(N) # N = time step
+        q = float(q) # q = continuous dividend yield rate
+
+
+        deltaT = T/N # Δt
+        Smax = 2*K 
+        deltaS = Smax/M # ΔS
+
+
+        def alpha_j(j):
+            return 0.25 * deltaT * (sigma**2 * j**2 - (r - q) * j)
+
+        def beta_j(j):
+            return -0.5 * deltaT * (sigma**2 * j**2 + r)
+
+        def gamma_j(j):
+            return 0.25 * deltaT * (sigma**2 * j**2 + (r - q) * j)
+
+        def discount(i):
+            temp = K * np.exp(-r * (N - i) * deltaT)
+            return temp
+
+        j=np.arange(0,M+1,1).reshape(M+1,1)
+        Fc, Fp =np.maximum(j*deltaS - K , 0),np.maximum(K - j*deltaS, 0)
+
+        matrix1,matrix2   =  [np.zeros((M+1,M+1)) for k in range(2)]
+
+        matrix1[0,0], matrix2[0,0],matrix1[M,M],matrix2[M,M]  = [1] * 4
+
+        for j in range(1,M):
+            matrix1[j,j-1:j+2]= alpha_j(j),1 + beta_j(j),gamma_j(j)
+            matrix2[j,j-1:j+2]=-alpha_j(j),1 - beta_j(j), -gamma_j(j)
+
+        k = np.int32(np.floor(S/deltaS))
+
+        Call,Put = [],[]
+        for i in range(N-1,-1,-1): 
+            Fc,Fp = np.dot(matrix1,Fc),np.dot(matrix1,Fp)
+            Fc[0,0],Fp[M,0] = 0,0
+            Fc[M,0],Fp[0,0] = Smax - discount(i),discount(i)
+            Fc,Fp = np.dot(np.linalg.inv(matrix2),Fc),np.dot(np.linalg.inv(matrix2),Fp)
+            Call.insert(0, (Fc[k,0] + ((Fc[k+1,0]-Fc[k,0]) /deltaS) * (S - k * deltaS)))
+            Put.insert(0, (Fp[k,0] + ((Fp[k+1,0]-Fp[k,0]) /deltaS) * (S - k * deltaS)))
+        return (Call[0],Put[0],False,None)
+    except Exception as e:
+        return ('ERROR','ERROR', True, e)
