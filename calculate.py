@@ -1,19 +1,46 @@
+from typing import Tuple
 import numpy as np
 import math
 import pandas as pd
-from api import get_closing_price
 
-def explicit(S, K, r, q, T, sigma, M, N):
+
+def calculate(
+    S: float, 
+    K: float, 
+    r: float, 
+    q: float, 
+    T: float, 
+    sigma: float, 
+    M: int, 
+    N:int,
+    cal_type:str='explicit') -> Tuple[float, float]:
+    
+    if cal_type == 'explicit':
+        return __explicit(S, K, r, q, T, sigma, M, N)
+
+    elif cal_type == 'implicit':
+        return __implicit(S, K, r, q, T, sigma, M, N)
+    else:
+        print("Calculation method not recognized") 
+
+
+def __explicit(
+    S: float, 
+    K: float, 
+    r: float, 
+    q: float, 
+    T: float, 
+    sigma: float, 
+    M: int, 
+    N:int) -> Tuple[float, float]:
     """ 
     Using Black-Scholes formula to calculate option price
-    returns a tuple with 4 elements (call option, put option, is_error (boolean), error message)
+    returns a tuple with 2 elements (call option, put option)
     input S can be stock price or stock symbol 
     """
     try:
-        if isinstance(S, float) or isinstance(S, int):
-            S = float(S) # S = Price of the underlying asset
-        elif isinstance(S, str):
-            S = get_closing_price(S)# S = Price of the underlying asset
+        ## TODO: Cleanup
+        S = float(S) # S = Price of the underlying asset
         K = float(K) # K = strike price
         r = float(r) # r = annualised risk-free rate
         sigma = float(sigma) # σ,(sigma) = volatility 
@@ -50,5 +77,19 @@ def explicit(S, K, r, q, T, sigma, M, N):
             calloption.insert(0,fnjcall[k,0] + ((fnjcall[k+1, 0]-fnjcall[k,0]) /deltaS) * (S - k * deltaS))
             putoption.insert(0,fnjput[k,0] + ((fnjput[k+1, 0]-fnjput[k,0]) /deltaS) * (S - k * deltaS))
         return (calloption[0],putoption[0],False,None)
+
     except Exception as e:
-        return ('ERROR','ERROR', True, e)
+        print(e)
+        return (0,0)
+
+
+def __implicit(
+    S: float, 
+    K: float, 
+    r: float, 
+    q: float, 
+    T: float, 
+    sigma: float, 
+    M: int, 
+    N:int) -> Tuple[float, float]:
+    pass
