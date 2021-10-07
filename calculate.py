@@ -1,7 +1,7 @@
 import numpy as np
 import math
-import requests
 import pandas as pd
+from api import get_closing_price
 
 def explicit(S, K, r, q, T, sigma, M, N):
     """ 
@@ -13,9 +13,7 @@ def explicit(S, K, r, q, T, sigma, M, N):
         if isinstance(S, float) or isinstance(S, int):
             S = float(S) # S = Price of the underlying asset
         elif isinstance(S, str):
-            res = requests.get(f'https://finance.yahoo.com/quote/{S}?p={S}')
-            closing_price = pd.read_html(res.text, index_col=0)[0].loc['Previous Close', 1]
-            S = float(closing_price) # S = Price of the underlying asset
+            S = get_closing_price(S)# S = Price of the underlying asset
         K = float(K) # K = strike price
         r = float(r) # r = annualised risk-free rate
         sigma = float(sigma) # σ,(sigma) = volatility 
