@@ -55,49 +55,7 @@ closing_price_input = dbc.FormGroup(
         dbc.Label("Closing Price", html_for="closing-price-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="closing-price-input", value=0
-            ),
-            width=10,
-        ),
-    ],
-    row=True,
-)
-
-
-volatility_input = dbc.FormGroup(
-    [
-        dbc.Label("Volatility", html_for="volatility-input", width=2),
-        dbc.Col(
-            dbc.Input(
-                type="number", id="volatility-input", value=0
-            ),
-            width=10,
-        ),
-    ],
-    row=True,
-)
-
-
-interest_rate_input = dbc.FormGroup(
-    [
-        dbc.Label("Interest Rate", html_for="interest-input", width=2),
-        dbc.Col(
-            dbc.Input(
-                type="number", id="interest-input", value=0
-            ),
-            width=10,
-        ),
-    ],
-    row=True,
-)
-
-
-maturity_input = dbc.FormGroup(
-    [
-        dbc.Label("Maturity", html_for="maturity-input", width=2),
-        dbc.Col(
-            dbc.Input(
-                type="number", id="maturity-input", value=0
+                type="text", id="closing-price-input", value=0, min=0
             ),
             width=10,
         ),
@@ -111,7 +69,20 @@ strike_price_input = dbc.FormGroup(
         dbc.Label("Strike Price", html_for="strike-price-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="strike-price-input", value=0
+                type="text", id="strike-price-input", value=0, min=0
+            ),
+            width=10,
+        ),
+    ],
+    row=True,
+)
+
+volatility_input = dbc.FormGroup(
+    [
+        dbc.Label("Volatility (%)", html_for="volatility-input", width=2),
+        dbc.Col(
+            dbc.Input(
+                type="text", id="volatility-input", value=0, min=0
             ),
             width=10,
         ),
@@ -120,12 +91,41 @@ strike_price_input = dbc.FormGroup(
 )
 
 
-dividend_yield_input = dbc.FormGroup(
+interest_rate_input = dbc.FormGroup(
     [
-        dbc.Label("Dividend Yield", html_for="dividend-input", width=2),
+        dbc.Label("Interest Rate (%)", html_for="interest-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="dividend-input", value=0
+                type="text", id="interest-input", value=0, min=0
+            ),
+            width=10,
+        ),
+    ],
+    row=True,
+)
+
+
+maturity_input = dbc.FormGroup(
+    [
+        dbc.Label("Maturity (Days)", html_for="maturity-input", width=2),
+        dbc.Col(
+            dbc.Input(
+                type="text", id="maturity-input", value=0, min=0
+            ),
+            width=10,
+        ),
+    ],
+    row=True,
+)
+
+
+
+dividend_yield_input = dbc.FormGroup(
+    [
+        dbc.Label("Dividend Yield (%)", html_for="dividend-input", width=2),
+        dbc.Col(
+            dbc.Input(
+                type="text", id="dividend-input", value=0, min=0
             ),
             width=10,
         ),
@@ -136,10 +136,10 @@ dividend_yield_input = dbc.FormGroup(
 
 space_step_input = dbc.FormGroup(
     [
-        dbc.Label("M", html_for="space-step-input", width=2),
+        dbc.Label("M (Space Step)", html_for="space-step-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="space-step-input", value=0
+                type="text", id="space-step-input", value=0, min=0
             ),
             width=10,
         ),
@@ -150,10 +150,10 @@ space_step_input = dbc.FormGroup(
 
 time_step_input = dbc.FormGroup(
     [
-        dbc.Label("N", html_for="time-step-input", width=2),
+        dbc.Label("N (Time Step)", html_for="time-step-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="time-step-input", value=0
+                type="text", id="time-step-input", value=0, min=0
             ),
             width=10,
         ),
@@ -185,7 +185,7 @@ call_output = dbc.FormGroup(
         dbc.Label("N", html_for="call-price-output", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="call-price-output", disabled=True, value=10
+                type="text", id="call-price-output", disabled=True, value=10
             ),
             width=10,
         ),
@@ -199,7 +199,7 @@ put_output = dbc.FormGroup(
         dbc.Label("N", html_for="put-price-output", width=2),
         dbc.Col(
             dbc.Input(
-                type="number", id="put-price-output", disabled=True, value=5
+                type="text", id="put-price-output", disabled=True, value=5
             ),
             width=10,
         ),
@@ -229,10 +229,10 @@ def update_price(ticker: str) -> float:
     Output(component_id='put-price-output', component_property='value'),
     Input('submit-button', 'n_clicks'),
     State('closing-price-input', 'value'),
+    State('strike-price-input', 'value'),
     State('volatility-input', 'value'),
     State('interest-input', 'value'),
     State('maturity-input', 'value'),
-    State('strike-price-input', 'value'),
     State('dividend-input', 'value'),
     State('space-step-input', 'value'),
     State('time-step-input', 'value'),
