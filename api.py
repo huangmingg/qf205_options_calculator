@@ -9,6 +9,10 @@ def get_tickers() -> List[str]:
 
 
 def get_closing_price(ticker: str) -> float:
-    res = requests.get(f'https://finance.yahoo.com/quote/{ticker}?p={ticker}')
-    closing_price = pd.read_html(res.text, index_col=0)[0].loc['Previous Close', 1]
-    return float(closing_price)
+    try:
+        res = requests.get(f'https://finance.yahoo.com/quote/{ticker}?p={ticker}')
+        closing_price = pd.read_html(res.text, index_col=0)[0].loc['Previous Close', 1]
+        return float(closing_price)
+    except Exception as e:
+        print(e)
+        return 0
