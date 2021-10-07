@@ -5,6 +5,7 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 from datetime import date, timedelta
 from api import get_tickers, get_closing_price
+from calculate import calculate_price
 # import plotly.graph_objs as go
 # import plotly.express as px
 
@@ -37,10 +38,10 @@ calculation_radio = dbc.FormGroup(
             dbc.RadioItems(
                 id="calculation-radios",
                 options=[
-                    {"label": "Explicit Method", "value": 1},
-                    {"label": "Implicit Method", "value": 2},
+                    { "label": "Explicit Method", "value": 'explicit' },
+                    { "label": "Implicit Method", "value": 'implicit' },
                 ],
-                value=1,
+                value='explicit',
                 inline=True
             ),
             width=10,
@@ -50,113 +51,84 @@ calculation_radio = dbc.FormGroup(
 )
 
 
-closing_price_input = dbc.FormGroup(
+pricing_row_input = dbc.FormGroup(
     [
         dbc.Label("Closing Price", html_for="closing-price-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="closing-price-input", value=0, min=0
             ),
-            width=10,
+            width=4,
         ),
-    ],
-    row=True,
-)
-
-
-strike_price_input = dbc.FormGroup(
-    [
         dbc.Label("Strike Price", html_for="strike-price-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="strike-price-input", value=0, min=0
             ),
-            width=10,
+            width=4,
         ),
     ],
     row=True,
 )
 
-volatility_input = dbc.FormGroup(
+
+vol_int_row_input = dbc.FormGroup(
     [
         dbc.Label("Volatility (%)", html_for="volatility-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="volatility-input", value=0, min=0
             ),
-            width=10,
+            width=4,
         ),
-    ],
-    row=True,
-)
-
-
-interest_rate_input = dbc.FormGroup(
-    [
         dbc.Label("Interest Rate (%)", html_for="interest-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="interest-input", value=0, min=0
             ),
-            width=10,
+            width=4,
         ),
     ],
     row=True,
 )
 
 
-maturity_input = dbc.FormGroup(
+maturity_div_row_input = dbc.FormGroup(
     [
         dbc.Label("Maturity (Days)", html_for="maturity-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="maturity-input", value=0, min=0
             ),
-            width=10,
+            width=4,
         ),
-    ],
-    row=True,
-)
-
-
-
-dividend_yield_input = dbc.FormGroup(
-    [
         dbc.Label("Dividend Yield (%)", html_for="dividend-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="dividend-input", value=0, min=0
             ),
-            width=10,
-        ),
+            width=4,
+        ),        
     ],
     row=True,
 )
 
-
-space_step_input = dbc.FormGroup(
+space_time_step_row_input = dbc.FormGroup(
     [
         dbc.Label("M (Space Step)", html_for="space-step-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="space-step-input", value=0, min=0
             ),
-            width=10,
+            width=4,
         ),
-    ],
-    row=True,
-)
-
-
-time_step_input = dbc.FormGroup(
-    [
         dbc.Label("N (Time Step)", html_for="time-step-input", width=2),
         dbc.Col(
             dbc.Input(
                 type="text", id="time-step-input", value=0, min=0
             ),
-            width=10,
-        ),
+            width=4,
+        ),        
     ],
     row=True,
 )
@@ -166,55 +138,53 @@ submit_button = dbc.Button("Calculate", color="primary", block=True, id="submit-
 input_form = dbc.Form(
     [
         ticker_dropdown,
-        closing_price_input,
-        volatility_input,
-        interest_rate_input,
-        maturity_input,
-        strike_price_input,
-        dividend_yield_input,
-        space_step_input,
-        time_step_input,
+        pricing_row_input,
+        vol_int_row_input,
+        maturity_div_row_input,
+        space_time_step_row_input,
         calculation_radio,
         submit_button
     ]
 )
 
 
-call_output = dbc.FormGroup(
+call_put_output = dbc.FormGroup(
     [
-        dbc.Label("N", html_for="call-price-output", width=2),
+        dbc.Label("Call Price", html_for="call-price-output", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="call-price-output", disabled=True, value=10
+                type="text", id="call-price-output", disabled=True, value=0
             ),
-            width=10,
+            width=4,
         ),
-    ],
-    row=True,
-)
-
-
-put_output = dbc.FormGroup(
-    [
-        dbc.Label("N", html_for="put-price-output", width=2),
+        dbc.Label("Put Price", html_for="put-price-output", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="put-price-output", disabled=True, value=5
+                type="text", id="put-price-output", disabled=True, value=0
             ),
-            width=10,
-        ),
+            width=4,
+        ),        
     ],
     row=True,
 )
 
 output_form = dbc.Form(
     [
-        call_output,
-        put_output
+        call_put_output
     ]
 )
 
-dash_app.layout = html.Div([input_form, output_form])
+dash_app.layout = html.Div(
+    [
+        html.H1("Options Pricing Calculator", className="display-5"),
+        html.Hr(),
+        input_form,
+        html.Hr(), 
+        output_form
+    ],
+    className='p-4',
+
+    )
 
 @dash_app.callback(
     Output(component_id='closing-price-input', component_property='value'),
@@ -248,14 +218,10 @@ def calculate(
     div: float, 
     ss: float, 
     ts: float, 
-    calculation_type: int
+    calculation_type: str
 ) -> None:
-    print(type(n))
-    print(cp)
-    print(v)
-    print(div)
-    print(ts)
-    return 1, 2
+    print(calculation_type)
+    return calculate_price(cp, sp, int_rate, div, mat, v, ss, ts, calculation_type)
 
 
 if __name__ == '__main__':

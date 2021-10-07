@@ -4,17 +4,25 @@ import math
 import pandas as pd
 
 
-def calculate(
-    S: float, 
-    K: float, 
-    r: float, 
-    q: float, 
-    T: float, 
-    sigma: float, 
-    M: int, 
-    N:int,
-    cal_type:str='explicit') -> Tuple[float, float]:
-    
+def calculate_price(
+    closing_price: str, 
+    strike_price: str, 
+    interest_rate: str, 
+    dividend: str, 
+    maturity: str, 
+    volatility: str,
+    M: int,
+    N: int,
+    cal_type: str='explicit') -> Tuple[float, float]:
+    S = float(closing_price)
+    K = float(strike_price)
+    r = float(interest_rate) / 100
+    sigma = float(volatility) / 100
+    q = float(dividend) / 100
+    T = int(maturity) / 365
+    M = int(M)
+    N = int(N)
+
     if cal_type == 'explicit':
         return __explicit(S, K, r, q, T, sigma, M, N)
 
@@ -22,6 +30,7 @@ def calculate(
         return __implicit(S, K, r, q, T, sigma, M, N)
     else:
         print("Calculation method not recognized") 
+        return (0,0)
 
 
 def __explicit(
