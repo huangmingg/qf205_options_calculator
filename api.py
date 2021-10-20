@@ -17,4 +17,4 @@ def get_closing_price(ticker: str) -> Tuple[float, str]:
         closing_price = pd.read_html(res.text, index_col=0)[0].loc['Previous Close', 1]
         return (round(float(closing_price), 2), '')
     except Exception as e:
-        return None, str(e)
+        return None, f'Data for {ticker} not found, please key in the closing price manually'
