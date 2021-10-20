@@ -13,7 +13,7 @@ def calculate_price(
     volatility: str,
     M: int,
     N: int,
-    cal_type: str='explicit') -> Tuple[float, float]:
+    cal_type: str='explicit') -> Tuple[Tuple[float, float], str]:
     S = float(closing_price)
     K = float(strike_price)
     r = float(interest_rate) / 100
@@ -33,8 +33,7 @@ def calculate_price(
         return __crank(S, K, r, q, T, sigma, M, N)
     
     else:
-        print("Calculation method not recognized") 
-        return (0,0)
+        return (None, "Calculation method not recognized")
 
 
 def __explicit(
@@ -45,7 +44,7 @@ def __explicit(
     T: float, 
     sigma: float, 
     M: int, 
-    N:int) -> Tuple[float, float]:
+    N:int) ->  Tuple[Tuple[float, float], str]:
     """ 
     Using Black-Scholes formula to calculate option price
     returns a tuple with 2 elements (call option, put option)
@@ -89,11 +88,10 @@ def __explicit(
             fnjcall[M,0],fnjput[0,0] = (Smax - (K*np.exp(-r*(N-i)*deltaT)), (K*np.exp(-r*(N-i)*deltaT)))
             calloption.insert(0,fnjcall[k,0] + ((fnjcall[k+1, 0]-fnjcall[k,0]) /deltaS) * (S - k * deltaS))
             putoption.insert(0,fnjput[k,0] + ((fnjput[k+1, 0]-fnjput[k,0]) /deltaS) * (S - k * deltaS))
-        return calloption[0],putoption[0]
+        return (round(calloption[0], 2), round(putoption[0], 2)), None
 
     except Exception as e:
-        print(e)
-        return (0,0)
+        return (None, str(e))
 
 
 def __implicit(
@@ -104,7 +102,7 @@ def __implicit(
     T: float, 
     sigma: float, 
     M: int, 
-    N:int) -> Tuple[float, float]:
+    N:int) -> Tuple[Tuple[float, float], str]:
     try:
         Smax = 2*K
         #stock step size
@@ -138,11 +136,10 @@ def __implicit(
             Fc,Fp = np.dot(Ainv,Fc),np.dot(Ainv,Fp)
             Call.insert(0, (Fc[k,0] + ((Fc[k+1,0]-Fc[k,0]) /deltaS) * (S - k * deltaS)))
             Put.insert(0, (Fp[k,0] + ((Fp[k+1,0]-Fp[k,0]) /deltaS) * (S - k * deltaS)))
-        return (Call[0],Put[0],False,None)
+        return ((round(Call[0], 2), round(Put[0], 2))), None
     
     except Exception as e:
-        print(e)
-        return (0,0)
+        return (None, str(e))
     
 
 def __crank(
@@ -153,7 +150,7 @@ def __crank(
     T: float, 
     sigma: float, 
     M: int, 
-    N:int) -> Tuple[float, float]:
+    N:int) -> Tuple[Tuple[float, float], str]:
     
     try:
         #Input parameters
@@ -206,6 +203,6 @@ def __crank(
             Fc,Fp = np.dot(np.linalg.inv(matrix2),Fc),np.dot(np.linalg.inv(matrix2),Fp)
             Call.insert(0, (Fc[k,0] + ((Fc[k+1,0]-Fc[k,0]) /deltaS) * (S - k * deltaS)))
             Put.insert(0, (Fp[k,0] + ((Fp[k+1,0]-Fp[k,0]) /deltaS) * (S - k * deltaS)))
-        return (Call[0],Put[0],False,None)
+        return ((round(Call[0], 2), round(Put[0], 2))), None
     except Exception as e:
-        return ('ERROR','ERROR', True, e)
+        return (None, str(e))

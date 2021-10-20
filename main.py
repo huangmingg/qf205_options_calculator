@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 from datetime import date, timedelta
 from api import get_tickers, get_closing_price
 from calculate import calculate_price
+from typing import Tuple
 # import plotly.graph_objs as go
 # import plotly.express as px
 
@@ -13,7 +14,7 @@ from calculate import calculate_price
 dash_app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 app = dash_app.server
 
-TICKERS = get_tickers()
+TICKERS, _ = get_tickers()
 
 ticker_dropdown = dbc.FormGroup(
     [
@@ -40,6 +41,7 @@ calculation_radio = dbc.FormGroup(
                 options=[
                     { "label": "Explicit Method", "value": 'explicit' },
                     { "label": "Implicit Method", "value": 'implicit' },
+                    { "label": "Crank Method", "value": 'crank' },
                 ],
                 value='explicit',
                 inline=True
@@ -77,14 +79,14 @@ vol_int_row_input = dbc.FormGroup(
         dbc.Label("Volatility (%)", html_for="volatility-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="volatility-input", value=0, min=0
+                type="text", id="volatility-input", value=5, min=0
             ),
             width=4,
         ),
         dbc.Label("Interest Rate (%)", html_for="interest-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="interest-input", value=0, min=0
+                type="text", id="interest-input", value=5, min=0
             ),
             width=4,
         ),
@@ -98,14 +100,14 @@ maturity_div_row_input = dbc.FormGroup(
         dbc.Label("Maturity (Days)", html_for="maturity-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="maturity-input", value=0, min=0
+                type="text", id="maturity-input", value=14, min=0
             ),
             width=4,
         ),
         dbc.Label("Dividend Yield (%)", html_for="dividend-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="dividend-input", value=0, min=0
+                type="text", id="dividend-input", value=5, min=0
             ),
             width=4,
         ),        
@@ -118,14 +120,14 @@ space_time_step_row_input = dbc.FormGroup(
         dbc.Label("M (Space Step)", html_for="space-step-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="space-step-input", value=0, min=0
+                type="text", id="space-step-input", value=1, min=0
             ),
             width=4,
         ),
         dbc.Label("N (Time Step)", html_for="time-step-input", width=2),
         dbc.Col(
             dbc.Input(
-                type="text", id="time-step-input", value=0, min=0
+                type="text", id="time-step-input", value=1, min=0
             ),
             width=4,
         ),        
@@ -180,23 +182,41 @@ dash_app.layout = html.Div(
         html.Hr(),
         input_form,
         html.Hr(), 
-        output_form
+        output_form,
+        html.Div(id='alert-div', children=[
+            html.Div(id='update-price-alert', children=[]),
+            html.Div(id='calculation-alert', children=[]),
+        ])
     ],
     className='p-4',
-
     )
+
 
 @dash_app.callback(
     Output(component_id='closing-price-input', component_property='value'),
+    Output(component_id='strike-price-input', component_property='value'),
+    Output(component_id='update-price-alert', component_property='children'),
     Input(component_id='ticker-dropdown', component_property='value'),
 )
-def update_price(ticker: str) -> float:
-    return get_closing_price(ticker)
+def update_price(ticker: str):
+    p, err = get_closing_price(ticker)
+    if err:
+        error = dbc.Alert(
+            err,
+            is_open=True,
+            duration=4000,
+            color="danger"
+        )
+        return 0, 0, error
+
+    else:
+        return p, round((p*1.05),2), dash.no_update
 
 
 @dash_app.callback(
     Output(component_id='call-price-output', component_property='value'),
     Output(component_id='put-price-output', component_property='value'),
+    Output(component_id='calculation-alert', component_property='children'),
     Input('submit-button', 'n_clicks'),
     State('closing-price-input', 'value'),
     State('strike-price-input', 'value'),
@@ -219,9 +239,20 @@ def calculate(
     ss: float, 
     ts: float, 
     calculation_type: str
-) -> None:
-    print(calculation_type)
-    return calculate_price(cp, sp, int_rate, div, mat, v, ss, ts, calculation_type)
+):
+    res, err = calculate_price(cp, sp, int_rate, div, mat, v, ss, ts, calculation_type)
+    if err:
+        error = dbc.Alert(
+            err,
+            is_open=True,
+            duration=4000,
+            color="danger"
+        )
+        return 0, 0, error
+    else:
+        call, put = res
+        return call, put, dash.no_update
+     
 
 
 if __name__ == '__main__':
