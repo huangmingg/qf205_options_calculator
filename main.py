@@ -231,15 +231,17 @@ def update_price(ticker: str):
 def calculate(
     n: int, 
     cp: float, 
+    sp: float, 
     v: float, 
     int_rate: float, 
     mat: float, 
-    sp: float, 
     div: float, 
     ss: float, 
     ts: float, 
     calculation_type: str
 ):
+    if not n:
+        return 0, 0, dash.no_update
     res, err = calculate_price(cp, sp, int_rate, div, mat, v, ss, ts, calculation_type)
     if err:
         error = dbc.Alert(

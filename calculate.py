@@ -108,7 +108,7 @@ def __implicit(
         #stock step size
         deltaS=Smax/M
 
-        #timestep size
+        #timestep size      
         deltaT=T/N
 
         # j=np.arange(1,M,dtype=np.float)
